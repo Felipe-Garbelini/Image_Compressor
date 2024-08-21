@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload e Compactação de Imagem</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+        .content {
+            flex: 1;
+            padding-bottom: 2rem; /* Espaço reservado para o footer */
+        }
+        #imagePreview, #compressedImage {
+            max-width: 100%;
+            max-height: 300px; /* Ajuste para 300x300 */
+            width: auto;
+            height: auto;
+            object-fit: contain;
+        }
+        .form-container, .result-container {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .navbar {
+            background-color: #0d6efd;
+            margin-bottom: 0;
+            padding: 1rem 0;
+        }
+        .navbar-brand {
+            font-size: 1.25rem;
+            color: #ffffff;
+            text-align: center;
+            width: 100%;
+        }
+        .navbar-brand:hover {
+            color: #e9ecef;
+        }
+        .footer {
+            background-color: #6c757d;
+            color: #ffffff;
+            text-align: center;
+            padding: 0.5rem 0;
+            width: 100%;
+            font-size: 0.875rem;
+        }
+        .loader {
+            display: none;
+            position: fixed;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1050;
+        }
+        .result-container {
+            display: none;
+            margin-top: 2rem;
+            padding: 2rem;
+            background-color: #fff;
+            border-radius: 5px;
+        }
+        .image-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 1rem 0;
+        }
+        .image-container img {
+            width: 100%;
+            height: 300px; /* Altura fixada para 300px */
+            object-fit: contain;
+        }
+        .info-container {
+            text-align: center;
+            margin-top: 1rem;
+        }
+        .reduction-percentage {
+            font-size: 1.25rem;
+            font-weight: bold;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="#">Compactador de Arquivo</a>
+        </div>
+    </nav>
+
+    <!-- Content -->
+    <div class="content">
+        <div class="container mt-5">
+            <div class="row justify-content-center">
+                <div class="col-md-6">
+                    <h2 class="text-center mb-4">Upload e Compactação de Imagem</h2>
+                    <form id="uploadForm" action="upload.php" method="post" enctype="multipart/form-data" class="p-4 border rounded bg-light form-container">
+                        <div class="mb-3">
+                            <label for="imageUpload" class="form-label">Selecione a imagem</label>
+                            <input type="file" class="form-control" id="imageUpload" name="image" accept="image/jpeg, image/png, image/gif" required onchange="previewImage(event)">
+                        </div>
+                        <div class="mb-3 text-center">
+                            <img id="imagePreview" src="#" alt="Pré-visualização da imagem" class="img-fluid img-thumbnail d-none"/>
+                        </div>
+                        <div class="d-grid">
+                            <input type="submit" class="btn btn-primary btn-block" value="Compactar Arquivo">
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>    
+
+        <!-- Loader -->
+        <div id="loader" class="loader">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Carregando...</span>
+            </div>
+        </div>
+
+        <!-- Result Container -->
+        <div id="result" class="container mt-4 result-container">
+            <h2 class="text-center mb-4">Resultado da Compactação</h2>
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="image-container">
+                        <div class="text-center">
+                            <h4>Imagem Original</h4>
+                            <img id="originalImage" src="#" alt="Imagem Original" class="img-fluid img-thumbnail"/>
+                            <p id="originalSize"></p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="image-container">
+                        <div class="text-center">
+                            <h4>Imagem Compactada</h4>
+                            <img id="compressedImage" src="#" alt="Imagem Compactada" class="img-fluid img-thumbnail"/>
+                            <p id="compressedSize"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="text-center reduction-percentage" id="reductionPercentage"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <p>Todos os direitos reservados GarbeCompany ©</p>
+    </footer>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Impede o envio do formulário padrão
+            document.getElementById('loader').style.display = 'block'; // Exibe o loader
+            document.getElementById('result').style.display = 'none'; // Oculta o resultado
+
+            const formData = new FormData(this);
+
+            fetch(this.action, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loader').style.display = 'none'; // Oculta o loader
+
+                // Cria um link temporário para iniciar o download
+                const downloadLink = document.createElement('a');
+                downloadLink.href = data.compressedUrl; // URL da imagem compactada
+                downloadLink.download = 'imagem_compactada.' + (data.originalUrl.split(';')[0].split('/')[1] === 'jpeg' ? 'jpg' : 'png'); // Nome padrão do arquivo
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                document.body.removeChild(downloadLink);
+
+                // Exibe as imagens e informações
+                document.getElementById('originalImage').src = data.originalUrl;
+                document.getElementById('compressedImage').src = data.compressedUrl;
+                document.getElementById('originalSize').innerText = formatSize(data.originalSize);
+                document.getElementById('compressedSize').innerText = formatSize(data.compressedSize);
+                document.getElementById('reductionPercentage').innerText = `Redução: ${data.reductionPercentage}%`;
+
+                // Exibe o container de resultados
+                document.getElementById('result').style.display = 'block';
+                scrollToResult();
+            })
+            .catch(error => {
+                console.error('Erro:', error);
+                document.getElementById('loader').style.display = 'none'; // Oculta o loader em caso de erro
+            });
+        });
+
+        function previewImage(event) {
+            const input = event.target;
+            const reader = new FileReader();
+            const preview = document.getElementById('imagePreview');
+            
+            reader.onload = function(){
+                preview.src = reader.result;
+                preview.classList.remove('d-none');
+            }
+    
+            if(input.files && input.files[0]) {
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function formatSize(size) {
+            if (size < 1024 * 1024) {
+                return `Tamanho: ${(size / 1024).toFixed(2)} KB`;
+            } else {
+                return `Tamanho: ${(size / (1024 * 1024)).toFixed(2)} MB`;
+            }
+        }
+
+        function scrollToResult() {
+            const resultSection = document.getElementById('result');
+            resultSection.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>
