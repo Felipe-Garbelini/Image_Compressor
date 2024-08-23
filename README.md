@@ -15,7 +15,12 @@ Esse Projeto é um site para comprimir imagens do tipo PNG e JPG, ele baixa a im
 - Extensão pngquant
 - Bootstrap 5.3
 
-
+# Como iniciar o Projeto no Docker
+- Instale o Docker na sua maquina [Site oficial do Docker](https://docs.docker.com/get-started/)
+- Clone esse repositório
+- Rode os seguintes comandos na pasta
+- sudo make build (apenas a primeira vez)
+- sudo make start 
 
 ## Autores
 
