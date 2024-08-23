@@ -1,29 +1,22 @@
 <?php
-// Função para compactar a imagem mantendo a resolução
+
 function compressImage($source, $destination, $quality) {
-    // Obtém informações da imagem
+    // informações da imagem
     $info = getimagesize($source);
 
     // Verifica o tipo de imagem
     if ($info['mime'] == 'image/jpeg') {
-        // Compacta JPEG
         $image = imagecreatefromjpeg($source);
         imagejpeg($image, $destination, $quality);
         imagedestroy($image);
     } elseif ($info['mime'] == 'image/png') {
-        // Otimiza PNG diretamente com pngquant, sem salvar temporariamente com GD
         shell_exec("pngquant --quality=65-80 --force --output '$destination' '$source'");
-    } elseif ($info['mime'] == 'image/gif') {
-        // Compacta GIF
-        $image = imagecreatefromgif($source);
-        imagegif($image, $destination);
-        imagedestroy($image);
     } else {
         throw new Exception('Tipo de imagem não suportado.');
     }
 }
 
-// Verifica se o formulário foi enviado e se o arquivo foi carregado com sucesso
+// Verifica se o formulário foi enviado e se o arquivo foi carregado 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['image'])) {
     $error = $_FILES['image']['error'];
 
@@ -40,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_FILES['image'])) {
         $compressedFileName = $originalFileName . '_compress.' . $originalFileExtension;
         $tempFile = sys_get_temp_dir() . '/' . $compressedFileName;
 
-        // Define a qualidade da compactação (para JPEG, é de 0 a 100)
+        // Define a qualidade da compactação JPEG
         $quality = 25; 
 
         try {
